@@ -23,9 +23,9 @@
     [b, a] = butter(4, fc / (fs / 2));
     y = filtfilt(b,a,roll_accel);
     subplot(5,1,4)
-    plot(pitch_accel)
-    subtitle('Roll accel')
+    plot(data(:,10))
+    subtitle('Filtered Roll accel')
     subplot(5,1,5)
-    plot(y)
-    subtitle('Filtered roll accel')
+    plot(data(:,11))
+    subtitle('Filtered pitch accel')
 end
