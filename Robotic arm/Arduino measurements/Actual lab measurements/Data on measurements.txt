@@ -1,3 +1,4 @@
 15-12-16: From extensions starting from 1270 mm to 1560 mm (Without filtered data) (14.3 Kg)
 16-02-13: From 230 mm (starting extension) to 1560 mm (full extension) (From here, with filtered accel data columns) (no weight)
 16-53-26: From 320 mm (min possible extension with weight) to 1120 mm (14.3 Kg)
+17-11-78: From 1260 mm to 1560 mm (14.3 Kg)
