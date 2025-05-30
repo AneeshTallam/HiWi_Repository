@@ -93,9 +93,9 @@ class InverseDynamics:
 
 
         # IMPORTANT: actuator angles must be negative because inverse Kinematics from Virtuos and Asadi's dynamics
-        q1 = -input[9]
-        q2 = -input[10]
-        q3 = -input[11]
+        q1 = -input_values[9]
+        q2 = -input_values[10]
+        q3 = -input_values[11]
 
         p_dot = np.array([vel_x, vel_y, vel_z])
         p_dot_dot = np.array([acc_x, acc_y, acc_z])
@@ -282,14 +282,15 @@ class InverseDynamics:
         J_L_3 = Jacob_last_row_3 * r_L * self.Length_upper_arm
 
         
-        J_K_1 = Jacob_last_row_1 * (1 - r_K) * self.Length_upper_arm + rotation_O_1.T @ rotation_R_1.T * r_K
-        J_K_2 = Jacob_last_row_2 * (1 - r_K) * self.Length_upper_arm + rotation_O_2.T @ rotation_R_2.T * r_K
-        J_K_3 = Jacob_last_row_3 * (1 - r_K) * self.Length_upper_arm + rotation_O_3.T @ rotation_R_3.T * r_K
+        J_K_1 = Jacob_last_row_1 * (1 - r_K) * self.Length_upper_arm + (rotation_O_1.T @ rotation_R_1.T) * r_K
+        J_K_2 = Jacob_last_row_2 * (1 - r_K) * self.Length_upper_arm + (rotation_O_2.T @ rotation_R_2.T) * r_K
+        J_K_3 = Jacob_last_row_3 * (1 - r_K) * self.Length_upper_arm + (rotation_O_3.T @ rotation_R_3.T) * r_K
 
 
         J_C_1 = Jacob_last_row_1 * self.Length_upper_arm
         J_C_2 = Jacob_last_row_2 * self.Length_upper_arm
         J_C_3 = Jacob_last_row_3 * self.Length_upper_arm
+    
 
         #Solving for mass distributions in points A, C and forearm COM
         L = self.Length_forearm  # For code readability
@@ -321,9 +322,9 @@ class InverseDynamics:
         # Terms required for Mass matrix calculations 
         # sum_one: mass of distal links at COM position
         sum_one = (
-            np.transpose(J_K_1) @ rotation_O_1.T @ rotation_R_1.T * m_K * r_K +
-            np.transpose(J_K_2) @ rotation_O_2.T @ rotation_R_2.T * m_K * r_K +
-            np.transpose(J_K_3) @ rotation_O_3.T @ rotation_R_3.T * m_K * r_K
+            (np.transpose(J_K_1) @ (rotation_O_1.T @ rotation_R_1.T)) * m_K * r_K +
+            (np.transpose(J_K_2) @ (rotation_O_2.T @ rotation_R_2.T)) * m_K * r_K +
+            (np.transpose(J_K_3) @ (rotation_O_3.T @ rotation_R_3.T)) * m_K * r_K
         )
         # sum_two: combined mass contribution from elbow, upper arm, and distal links
         sum_two_1 = (
@@ -374,14 +375,14 @@ class InverseDynamics:
         ])
 
         # Compute auxiliary terms
-        aux_term_1 = -p_dot * outer_product_1
-        aux_term_2 = -p_dot * outer_product_2
-        aux_term_3 = -p_dot * outer_product_3
+        aux_term_1 = -p_dot @ outer_product_1.reshape((3,3), order='F')
+        aux_term_2 = -p_dot @ outer_product_2.reshape((3,3), order='F')
+        aux_term_3 = -p_dot @ outer_product_3.reshape((3,3), order='F')
 
         # Compose sum_c_aux vectors
-        sum_c_aux_1 = np.array([0, aux_term_1[0], jacobian_dot_1[0], 0, aux_term_1[1], jacobian_dot_2[0], 0, aux_term_1[2], jacobian_dot_3[0]])
-        sum_c_aux_2 = np.array([0, aux_term_2[0], jacobian_dot_1[1], 0, aux_term_2[1], jacobian_dot_2[1], 0, aux_term_2[2], jacobian_dot_3[1]])
-        sum_c_aux_3 = np.array([0, aux_term_3[0], jacobian_dot_1[2], 0, aux_term_3[1], jacobian_dot_2[2], 0, aux_term_3[2], jacobian_dot_3[2]])
+        sum_c_aux_1 = np.array([0, aux_term_1[0], jacobian_dot_1[0], 0, aux_term_1[1], jacobian_dot_2[0], 0, aux_term_1[2], jacobian_dot_3[0]]).reshape((3,3), order='F')
+        sum_c_aux_2 = np.array([0, aux_term_2[0], jacobian_dot_1[1], 0, aux_term_2[1], jacobian_dot_2[1], 0, aux_term_2[2], jacobian_dot_3[1]]).reshape((3,3), order='F')
+        sum_c_aux_3 = np.array([0, aux_term_3[0], jacobian_dot_1[2], 0, aux_term_3[1], jacobian_dot_2[2], 0, aux_term_3[2], jacobian_dot_3[2]]).reshape((3,3), order='F')
 
         # summation term present in C_p_q_pdot_qdot
         sum_c = (
@@ -400,7 +401,7 @@ class InverseDynamics:
 
         # Final matrix consisting of coriolis and certifugal forces (Equation 41 of Asadi and Heydari)
         C_p_q_pdot_qdot = (
-            np.transpose(Jacobian) @ Jacobian_dot * (self.inertia_motor + self.inertia_upper_arm)
+            (np.transpose(Jacobian) @ Jacobian_dot) * (self.inertia_motor + self.inertia_upper_arm)
             + sum_c
         )
 
@@ -438,39 +439,39 @@ class InverseDynamics:
         output_values[1] = tau[1]
         output_values[2] = tau[2]
 
-        output_values[3] = inverse_M_p_q[0]
-        output_values[4] = inverse_M_p_q[1]
-        output_values[5] = inverse_M_p_q[2]
-        output_values[6] = inverse_M_p_q[3]
-        output_values[7] = inverse_M_p_q[4]
-        output_values[8] = inverse_M_p_q[5]
-        output_values[9] = inverse_M_p_q[6]
-        output_values[10] = inverse_M_p_q[7]
-        output_values[11] = inverse_M_p_q[8]
+        output_values[3] = inverse_M_p_q[0][0]
+        output_values[4] = inverse_M_p_q[0][1]
+        output_values[5] = inverse_M_p_q[0][2]
+        output_values[6] = inverse_M_p_q[1][0]
+        output_values[7] = inverse_M_p_q[1][1]
+        output_values[8] = inverse_M_p_q[1][2]
+        output_values[9] = inverse_M_p_q[2][0]
+        output_values[10] = inverse_M_p_q[2][1]
+        output_values[11] = inverse_M_p_q[2][2]
 
-        output_values[12] = C_p_q_pdot_qdot[0]
-        output_values[13] = C_p_q_pdot_qdot[1]
-        output_values[14] = C_p_q_pdot_qdot[2]
-        output_values[15] = C_p_q_pdot_qdot[3]
-        output_values[16] = C_p_q_pdot_qdot[4]
-        output_values[17] = C_p_q_pdot_qdot[5]
-        output_values[18] = C_p_q_pdot_qdot[6]
-        output_values[19] = C_p_q_pdot_qdot[7]
-        output_values[20] = C_p_q_pdot_qdot[8]
+        output_values[12] = C_p_q_pdot_qdot[0][0]
+        output_values[13] = C_p_q_pdot_qdot[0][1]
+        output_values[14] = C_p_q_pdot_qdot[0][2]
+        output_values[15] = C_p_q_pdot_qdot[1][0]
+        output_values[16] = C_p_q_pdot_qdot[1][1]
+        output_values[17] = C_p_q_pdot_qdot[1][2]
+        output_values[18] = C_p_q_pdot_qdot[2][0]
+        output_values[19] = C_p_q_pdot_qdot[2][1]
+        output_values[20] = C_p_q_pdot_qdot[2][2]
 
         output_values[21] = G_p_q[0]
         output_values[22] = G_p_q[1]
         output_values[23] = G_p_q[2]
 
-        output_values[24] = J_T[0]
-        output_values[25] = J_T[1]
-        output_values[26] = J_T[2]
-        output_values[27] = J_T[3]
-        output_values[28] = J_T[4]
-        output_values[29] = J_T[5]
-        output_values[30] = J_T[6]
-        output_values[31] = J_T[7]
-        output_values[32] = J_T[8]
+        output_values[24] = J_T[0][0]
+        output_values[25] = J_T[0][1]
+        output_values[26] = J_T[0][2]
+        output_values[27] = J_T[1][0]
+        output_values[28] = J_T[1][1]
+        output_values[29] = J_T[1][2]
+        output_values[30] = J_T[2][0]
+        output_values[31] = J_T[2][1]
+        output_values[32] = J_T[2][2]
 
 
                         
