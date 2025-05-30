@@ -37,7 +37,7 @@ input_values = np.array([
     0.1, 0.1, 0.1    # actuator angles (note: negated in exec_model)
 ])
 
-output_values = np.zeros(out_no)  # Placeholder, not yet used
+output_values = np.zeros(out_no)  
 hcnc = 0.001
 tcnc = 0.0
 

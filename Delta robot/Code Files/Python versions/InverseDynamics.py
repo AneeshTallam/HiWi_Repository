@@ -48,20 +48,18 @@ class InverseDynamics:
             self.inertia_dominant_forearm = par_list["inertia_dominant_forearm"]
             self.inertia_upper_arm = par_list["inertia_upper_arm"]
         except KeyError as e:
-            print(f"{model_name}, Missing parameter: {e}")
-            return False
+            raise ValueError(f"{model_name}, Missing parameter: {e}")
+
         
         #verifying the number of output and input ports
 
         if inp_no != 12:
-            print(f"{model_name}, Number of Input-Ports must be #12!")
-            return False
+            raise ValueError(f"{model_name}, Number of Input-Ports must be #12!")
+
 
         if out_no != 33:
-            print(f"{model_name}, Number of Output-Ports must be #33!")
-            return False
+            raise ValueError(f"{model_name}, Number of Output-Ports must be #33!")
 
-        return True
     
     def exec_model(self, model_name, input_values, inp_no, output_values, out_no, hsim, tsim, hcnc, tcnc):
         
@@ -78,6 +76,8 @@ class InverseDynamics:
         - hcnc: float, output step size
         - tcnc: float, output time in seconds
         """
+        # Ensure input is a numpy array for convenience
+        input_values = np.asarray(input_values)
         
         #Extracting position, velocity and acceleration values
 
